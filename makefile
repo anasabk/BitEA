@@ -18,7 +18,7 @@ obj/%.o: src/%.c
 	gcc $(CFLAGS) -c $< -o $@ $(LINKFLAGS)
 
 build: $(OBJECTS)
-	gcc $(CFLAGS) $(OBJECTS) -o BitE $(LINKFLAGS)
+	gcc $(CFLAGS) $(OBJECTS) -o BitEA $(LINKFLAGS)
 
 clean:
-	rm -rf obj BitE
+	rm -rf obj BitEA
