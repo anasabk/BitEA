@@ -1,5 +1,5 @@
 OBJECTS = obj/stdgraph.o \
-		  obj/BitE.o \
+		  obj/BitEA.o \
 		  obj/test.o 
 
 SEARCH_PATH = include

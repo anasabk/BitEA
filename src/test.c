@@ -15,7 +15,7 @@
 #include <stdatomic.h>
 #include <signal.h>
 
-#include "BitE.h"
+#include "BitEA.h"
 #include "stdgraph.h"
 
 
@@ -42,7 +42,7 @@ struct test_param {
 };
 
 
-void test_graph(void *param) {
+void test_graph(void *param, int *best_result) {
     int size = ((struct test_param*)param)->size;
     int iteration_count = ((struct test_param*)param)->iteration_count;
     int target_color = ((struct test_param*)param)->target_color;
@@ -87,7 +87,7 @@ void test_graph(void *param) {
     int best_iteration;
 
     gettimeofday(&t1, NULL);
-    temp_color_count = BitE (
+    temp_color_count = BitEA (
         size,
         edges,
         weights,
@@ -102,6 +102,9 @@ void test_graph(void *param) {
     );
     gettimeofday(&t2, NULL);
     total_execution_time += (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1000000.0;
+
+    if(temp_fitness == 0)
+        is_valid(size, edges, temp_color_count, temp_colors);
 
     printf(
         "|%s|%3d|%10.6lf|%3d|%5d|%3d|%10.6lf|\n",
@@ -125,19 +128,23 @@ void test_graph(void *param) {
         total_execution_time
     );
 
-    char buffer[512];
-    sprintf(buffer,
-        "|  graph name   | target color | k time | k | cost | uncolored | total time |\n|%s|%3d|%10.6lf|%3d|%5d|%3d|%10.6lf|\n",
-        graph_filename, 
-        target_color,
-        temp_time, 
-        temp_color_count,
-        temp_fitness,
-        temp_uncolored,
-        total_execution_time
-    );
+    if(*best_result > temp_fitness) {
+        *best_result = temp_fitness;
 
-    print_colors(result_filename, buffer, target_color, size, temp_colors);
+        char buffer[512];
+        sprintf(buffer,
+            "|  graph name   | target color | k time | k | cost | uncolored | total time |\n|%s|%3d|%10.6lf|%3d|%5d|%3d|%10.6lf|\n",
+            graph_filename, 
+            target_color,
+            temp_time, 
+            temp_color_count,
+            temp_fitness,
+            temp_uncolored,
+            total_execution_time
+        );
+
+        print_colors(result_filename, buffer, target_color, size, temp_colors);
+    }
 
     free(edges);
     return NULL;
@@ -182,8 +189,9 @@ int main(int argc, char *argv[]) {
         strcpy(param.weight_filename, strtok(NULL, " "));
         strcpy(param.result_filename, strtok(NULL, " "));
 
+        int best_fitness = __INT_MAX__;
         for(;  test_count > 0; test_count--)
-            test_graph(&param);
+            test_graph(&param, &best_fitness);
     }
 
     fclose(test_list_file);

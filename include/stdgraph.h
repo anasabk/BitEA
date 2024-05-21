@@ -82,5 +82,7 @@ int count_conflicts(
     int conflict_count[]
 );
 
+int popcountl(uint64_t n);
+
 
 #endif

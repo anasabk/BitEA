@@ -1,5 +1,5 @@
-#ifndef BITE_H
-#define BITE_H
+#ifndef BITEA_H
+#define BITEA_H
 
 
 #include <stdatomic.h>
@@ -52,7 +52,7 @@ typedef struct {
  * @param best_solution_time Output pointer to the time it took to find the last solution.
  * @returns Number of colors in the solution.
  */
-int BitE(
+int BitEA(
     int graph_size, 
     const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
     int weights[], 

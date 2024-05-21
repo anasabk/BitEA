@@ -137,7 +137,7 @@ int count_edges(int graph_size, const block_t edges[][TOTAL_BLOCK_NUM(graph_size
     int i, j, total = 0;
     for(i = 0; i < graph_size; i++) {
         for(j = 0; j < TOTAL_BLOCK_NUM(graph_size); j++)
-            degrees[i] += __builtin_popcountl(edges[i][j]);
+            degrees[i] += popcountl(edges[i][j]);
         total += degrees[i];
     }
 
@@ -216,7 +216,6 @@ int graph_color_greedy(
     return max_color + 1;
 }
 
-
 int count_conflicts(
     int graph_size, 
     const block_t color[], 
@@ -228,10 +227,19 @@ int count_conflicts(
         if(CHECK_COLOR(color, i)) {
             conflict_count[i] = 0;
             for(j = 0; j < TOTAL_BLOCK_NUM(graph_size); j++)
-                conflict_count[i] += __builtin_popcountl(color[j] & edges[i][j]);
+                conflict_count[i] += popcountl(color[j] & edges[i][j]);
             total_conflicts += conflict_count[i];
         }
     }
 
     return total_conflicts/2;
+}
+
+int popcountl(uint64_t n) {
+    int cnt = 0;
+    while (n) {
+        n &= n - 1; // key point
+        ++cnt;
+    }
+    return cnt;
 }

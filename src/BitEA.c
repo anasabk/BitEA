@@ -1,6 +1,3 @@
-#define _GNU_SOURCE
-#pragma GCC target ("sse4")
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -16,12 +13,12 @@
 #include <pthread.h>
 #include <math.h>
 
-#include "BitE.h"
+#include "BitEA.h"
 #include "stdgraph.h"
 
 
 
-int BitE(
+int BitEA(
     int graph_size, 
     const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
     int weights[], 
@@ -80,10 +77,9 @@ int BitE(
     pthread_attr_init(&attr);
     pthread_t thread_id;
 
-    struct crossover_result_s *result;
-    pthread_create(&thread_id, &attr, generator_thread, &temp_param);
-    pthread_join(thread_id, (void**)&result);
-
+    struct crossover_result_s *result = generator_thread(&temp_param);
+    // pthread_create(&thread_id, &attr, generator_thread, &temp_param);
+    // pthread_join(thread_id, (void**)&result);
 
     // Return the best solution
     *best_fitness = fitness[best_i];
@@ -97,7 +93,6 @@ int BitE(
     free(result);
     for(int i = 0; i < population_size; i++)
         free(population[i]);
-
 
     return color_count[best_i];
 }
@@ -146,8 +141,8 @@ void fix_conflicts(
         for(i = 0; i < graph_size; i++) {
             if (CHECK_COLOR(color, i) &&
                 (conflict_count[worst_vert] < conflict_count[i] ||
-                 (conflict_count[worst_vert] == conflict_count[i] && weights[worst_vert] >= weights[i]))
-            ) {
+                 (conflict_count[worst_vert] == conflict_count[i] && 
+                  (weights[worst_vert] > weights[i] | (weights[worst_vert] == weights[i] && rand()%2))))            ) {
                 worst_vert = i;
             }
         }
@@ -186,19 +181,19 @@ void crossover(
     if(parent_color[0] != NULL && parent_color[1] != NULL)
         for(int i = 0; i < (TOTAL_BLOCK_NUM(graph_size)); i++) {
             child_color[i] = ((parent_color[0][i] | parent_color[1][i]) & ~(used_vertex_list[i]));
-            temp_v_count += __builtin_popcountl(child_color[i]);
+            temp_v_count += popcountl(child_color[i]);
         }
 
     else if(parent_color[0] != NULL)
         for(int i = 0; i < (TOTAL_BLOCK_NUM(graph_size)); i++) {
             child_color[i] = (parent_color[0][i] & ~(used_vertex_list[i]));
-            temp_v_count += __builtin_popcountl(child_color[i]);
+            temp_v_count += popcountl(child_color[i]);
         }
 
     else if(parent_color[1] != NULL)
         for(int i = 0; i < (TOTAL_BLOCK_NUM(graph_size)); i++) {
             child_color[i] = (parent_color[1][i] & ~(used_vertex_list[i]));
-            temp_v_count += __builtin_popcountl(child_color[i]);
+            temp_v_count += popcountl(child_color[i]);
         }
 
     (*used_vertex_count) += temp_v_count;
@@ -265,7 +260,7 @@ void search_back(
                 for(k = 0; k < TOTAL_BLOCK_NUM(graph_size); k++) {
                     temp_mask = child[j][k] & edges[i][k];
                     if(temp_mask) {
-                        conflict_count += __builtin_popcountl(temp_mask);
+                        conflict_count += popcountl(temp_mask);
                         if(conflict_count > 1)
                             break;
                         last_conflict = sizeof(block_t)*8*(k + 1) - 1 - __builtin_clzl(temp_mask);
@@ -327,7 +322,7 @@ void local_search(
                     conflict_array[k] = edges[i][k] & child[j][k];
                     if(conflict_array[k]) {
                         temp_mask = conflict_array[k];
-                        conflict_count += __builtin_popcountl(temp_mask);
+                        conflict_count += popcountl(temp_mask);
                         for(h = 0; h < sizeof(block_t)*8; h++)
                             if((temp_mask >> h) & (block_t)1)
                                 competition += weights[k*8*sizeof(block_t)+h];
@@ -453,16 +448,6 @@ int generate_child (
         edges,
         weights,
         child,
-        target_color_count,
-        pool,
-        &pool_count
-    );
-
-    search_back(
-        graph_size,
-        edges,
-        weights,
-        child, 
         target_color_count,
         pool,
         &pool_count
