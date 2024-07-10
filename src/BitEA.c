@@ -38,12 +38,20 @@ int BitEA(
     int fitness[population_size];
     for (int i = 0; i < population_size; i++) {
         population[i] = calloc(base_color_count * TOTAL_BLOCK_NUM((size_t)graph_size), sizeof(block_t));
-        graph_color_random(graph_size, edges, population[i], base_color_count);
+        // graph_color_random(graph_size, edges, population[i], base_color_count);
         uncolored[i] = base_color_count;
         color_count[i] = base_color_count;
         fitness[i] = __INT_MAX__;
     }
 
+    pop_complex_random(
+        graph_size,
+        edges,
+        weights,
+        population_size,
+        population,
+        base_color_count
+    );
 
     // Create and initialize the list of used parents.
     atomic_long used_parents[(TOTAL_BLOCK_NUM(population_size))];
@@ -563,14 +571,15 @@ void* generator_thread(void *param) {
             }
         }
 
-        // Make the target harder if it was found.
-        if(temp_fitness == 0 && child_colors <= *target_color_count)
-            *target_color_count = child_colors - 1;
-
         RESET_COLOR(used_parents, parent1);
         RESET_COLOR(used_parents, parent2);
 
         (*child_count)++;
+
+        // Make the target harder if it was found.
+        if(temp_fitness == 0)
+            // *target_color_count = child_colors - 1;
+            break;
     }
 
     struct crossover_result_s *result = malloc(sizeof(struct crossover_result_s));

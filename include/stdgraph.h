@@ -75,6 +75,15 @@ void graph_color_random(
     int max_color
 );
 
+void pop_complex_random (
+    int graph_size, 
+    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
+    const int weights[],
+    int pop_size,
+    block_t* population[], 
+    int max_color
+);
+
 int count_conflicts(
     int graph_size, 
     const block_t color[], 

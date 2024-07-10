@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +21,92 @@ void graph_color_random (
     for(int i = 0; i < graph_size; i++) {
         index = rand()%max_color;
         SET_COLOR(colors[index], i);
+    }
+}
+
+
+int comp_crit_1(const void* a, const void* b, void* metrics) {
+    int* weights = ((int**)metrics)[0];
+    int* degrees = ((int**)metrics)[1];
+    return (weights[*(int*)a] * degrees[*(int*)a]) - (weights[*(int*)b] * degrees[*(int*)b]);
+}
+
+int comp_crit_2(const void* a, const void* b, void* metrics) {
+    int* weights = ((int**)metrics)[0];
+    int* degrees = ((int**)metrics)[1];
+    return (weights[*(int*)a] * degrees[*(int*)a] * degrees[*(int*)a]) - (weights[*(int*)b] * degrees[*(int*)b] * degrees[*(int*)b]);
+}
+
+int comp_crit_3(const void* a, const void* b, void* weights) {
+    return (((int*)weights)[*(int*)a]) - (((int*)weights)[*(int*)b]);
+}
+
+void pop_complex_random (
+    int graph_size, 
+    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
+    const int weights[],
+    int pop_size,
+    block_t* population[], 
+    int max_color
+) {
+    int criteria[3][graph_size];
+
+    for (int i = 0; i < graph_size; i++) {
+        criteria[0][i] = i;
+        criteria[1][i] = i;
+        criteria[2][i] = i;
+    }
+
+    int degrees[graph_size];
+    count_edges(graph_size, edges, degrees);
+
+    int* metrics[2] = {weights, degrees};
+
+    qsort_r(criteria[0], graph_size, sizeof(int), comp_crit_1, metrics);
+    qsort_r(criteria[1], graph_size, sizeof(int), comp_crit_2, metrics);
+    qsort_r(criteria[2], graph_size, sizeof(int), comp_crit_3, weights);
+
+    // Go through the queue and color each vertex.
+    block_t adjacent_colors[TOTAL_BLOCK_NUM(graph_size)];
+    block_t (*indiv)[][TOTAL_BLOCK_NUM(graph_size)];
+    int current_vert;
+    int i, j, k;
+    for (int indiv_id = 0; indiv_id < pop_size; indiv_id++) {
+        indiv = population[indiv_id];
+
+        memset(indiv, 0, max_color * TOTAL_BLOCK_NUM(graph_size) * sizeof(block_t));
+
+        for(i = 0; i < graph_size; i++) {
+            if (indiv_id < 40)
+                current_vert = criteria[0][i];
+            else if (indiv_id < 80)
+                current_vert = criteria[1][i];
+            else
+                current_vert = criteria[2][i];
+
+            // Initialize the temporary data.
+            memset(adjacent_colors, 0, (TOTAL_BLOCK_NUM(max_color))*sizeof(block_t));
+            for(j = 0; j < TOTAL_BLOCK_NUM(graph_size); j++) {
+                for(k = 0; k < max_color; k++) {
+                    // SET_COLOR(adjacent_colors, edges[current_vert][j] & (*indiv)[k][j] & 1);
+                    if (edges[current_vert][j] & (*indiv)[k][j]) {
+                        SET_COLOR(adjacent_colors, k);
+                        break;
+                    }
+                }
+            }
+
+            // Find the first unused color (starting from 0) and assign this vertex to it.
+            for(j = 0; j < max_color; j++) {
+                if(!CHECK_COLOR(adjacent_colors, j)) {
+                    SET_COLOR((*indiv)[j], current_vert);
+                    break;
+                }
+            }
+
+            if (j == max_color)
+                SET_COLOR((*indiv)[rand()%max_color], current_vert);
+        }
     }
 }
 
