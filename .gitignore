@@ -4,9 +4,9 @@
 !src/*
 !include
 !include/*
-!graph_datasets
-!graph_datasets/*/
-!graph_datasets/*/*
+!instances
+!instances/*/
+!instances/*/*
 !makefile
 !README.md
 !.gitignore
