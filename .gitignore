@@ -4,6 +4,9 @@
 !src/*
 !include
 !include/*
+!graph_datasets
+!graph_datasets/*/
+!graph_datasets/*/*
 !makefile
 !README.md
 !.gitignore
