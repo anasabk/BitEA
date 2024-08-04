@@ -2,45 +2,11 @@
 #define BITEA_H
 
 
-#include <stdatomic.h>
-#include <inttypes.h>
 #include "stdgraph.h"
 
 
-struct crossover_param_s {
-    int base_color_count;
-    atomic_int *target_color_count;
-    atomic_int *best_i;
-    atomic_int *child_count;
-    int size;
-    int max_gen_num;
-    block_t *edges;
-    int *weights;
-    int *color_count;
-    int *fitness;
-    int *uncolored;
-    int population_size;
-    block_t *population;
-    atomic_long *used_parents;
-};
-
-struct crossover_result_s {
-    int best_i;
-    int iteration_count;
-    double best_time;
-};
-
-typedef struct {
-    block_t *color_mat;
-    int color_num;
-    int fitness;
-    int uncolored;
-} individual_t;
-
-
-
 /**
- * @brief Color the graph using a genetic algorithm.
+ * @brief Color a graph using BitEA algorithm.
  * 
  * @param size Size of the graph.
  * @param edges The edge matrix of the graph.
@@ -49,35 +15,22 @@ typedef struct {
  * @param max_gen_num The maximum number allowed of generated children.
  * @param best_solution Output pointer to the result color matrix.
  * @param best_fitness Output pointer to the result solution fitness.
- * @param best_solution_time Output pointer to the time it took to find the last solution.
+ * @param best_solution_time Output pointer to the time it took to find the best solution.
+ * @param uncolored_num Output pointer to the number of uncolored vertices in the best solution.
  * @returns Number of colors in the solution.
  */
 int BitEA(
     int graph_size, 
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    int weights[], 
+    const block_t *edges, 
+    int *weights, 
     int population_size,
     int base_color_count, 
     int max_gen_num, 
-    block_t best_solution[][TOTAL_BLOCK_NUM(graph_size)], 
+    block_t *best_solution, 
     int *best_fitness, 
     float *best_solution_time,
-    int *best_itertion,
     int *uncolored_num
 );
-
-
-/**
- * @brief Get a random color not used previously in the used_color_list.
- * When a color is returned, it is added to the used_color_list.
- * 
- * @param size Max number of colors.
- * @param colors_used Number of colors used.
- * @param used_color_list List of used colors.
- * @return If an unused color is found, return it. If all colors are 
- * used, return -1.
- */
-int get_rand_color(int max_color_num, int colors_used, block_t used_color_list[]);
 
 
 /**
@@ -95,47 +48,47 @@ int get_rand_color(int max_color_num, int colors_used, block_t used_color_list[]
  */
 void crossover(
     int graph_size,
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    const int weights[],
-    const block_t *parent_color[2],
-    block_t child_color[],
-    block_t pool[],
+    const block_t *edges, 
+    const int *weights,
+    const block_t **parent_color,
+    block_t *child_color,
+    block_t *pool,
     int *pool_count,
-    block_t used_vertex_list[],
+    block_t *used_vertex_list,
     int *used_vertex_count
 );
 
 
 void fix_conflicts(
     int graph_size,
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    const int values[],
-    int conflict_count[],
+    const block_t *edges, 
+    const int *weights,
+    int *conflict_count,
     int *total_conflicts,
-    block_t color[],
-    block_t pool[],
+    block_t *color,
+    block_t *pool,
     int *pool_total
 );
 
 
 void search_back(
     int graph_size,
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    const int weights[],
-    block_t child[][TOTAL_BLOCK_NUM(graph_size)], 
-    int current_color,
-    block_t pool[],
+    const block_t *edges, 
+    const int *weights,
+    block_t *child, 
+    int color_count,
+    block_t *pool,
     int *pool_count
 );
 
 
 void local_search(
     int graph_size,
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    const int weights[],
-    block_t child[][TOTAL_BLOCK_NUM(graph_size)], 
+    const block_t *edges, 
+    const int *weights,
+    block_t *child, 
     int color_count,
-    block_t pool[],
+    block_t *pool,
     int *pool_count
 );
 
@@ -159,20 +112,20 @@ void local_search(
  */
 int generate_child (
     int graph_size, 
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    const int weights[],
+    const block_t *edges, 
+    const int *weights,
     int color_num1, 
     int color_num2, 
-    const block_t parent1[][TOTAL_BLOCK_NUM(graph_size)], 
-    const block_t parent2[][TOTAL_BLOCK_NUM(graph_size)], 
+    const block_t *parent1, 
+    const block_t *parent2, 
     int target_color_count,
-    block_t child[][TOTAL_BLOCK_NUM(graph_size)],
+    block_t *child,
     int *child_color_count,
     int *uncolored
 );
 
 
-void* generator_thread(void *param);
+void* generator(void *param);
 
 
 #endif

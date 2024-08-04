@@ -1,19 +1,8 @@
-#define _GNU_SOURCE
-#pragma GCC target ("sse4")
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <stdbool.h>
-#include <fcntl.h>
-#include <unistd.h> 
 #include <string.h>
-#include <float.h>
-#include <sys/resource.h>
-#include <errno.h>
-#include <pthread.h>
-#include <stdatomic.h>
-#include <signal.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "BitEA.h"
 #include "stdgraph.h"
@@ -79,12 +68,10 @@ void test_graph(void *param, int *best_result) {
 
     float temp_time;
     int temp_fitness, temp_color_count, temp_uncolored;
-    block_t temp_colors[max_edge_count][TOTAL_BLOCK_NUM(size)];
-    memset(temp_colors, 0, max_edge_count*TOTAL_BLOCK_NUM(size)*sizeof(block_t));
+    block_t *temp_colors = calloc(max_edge_count, TOTAL_BLOCK_NUM(size)*sizeof(block_t));
 
     struct timeval t1, t2;
     float total_execution_time = 0;
-    int best_iteration;
 
     gettimeofday(&t1, NULL);
     temp_color_count = BitEA (
@@ -97,7 +84,6 @@ void test_graph(void *param, int *best_result) {
         temp_colors,
         &temp_fitness,
         &temp_time,
-        &best_iteration,
         &temp_uncolored
     );
     gettimeofday(&t2, NULL);
@@ -147,7 +133,7 @@ void test_graph(void *param, int *best_result) {
     }
 
     free(edges);
-    return NULL;
+    free(temp_colors);
 }
 
 int main(int argc, char *argv[]) {
@@ -195,4 +181,5 @@ int main(int argc, char *argv[]) {
     }
 
     fclose(test_list_file);
+    fclose(summary_file);
 }

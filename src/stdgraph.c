@@ -2,11 +2,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <inttypes.h>
+#include <string.h>
 
 #include "stdgraph.h"
 
@@ -43,14 +40,15 @@ int comp_crit_3(const void* a, const void* b, void* weights) {
 
 void pop_complex_random (
     int graph_size, 
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    const int weights[],
+    const block_t *edges, 
+    const int *weights,
     int pop_size,
-    block_t* population[], 
+    block_t **population, 
     int max_color
 ) {
-    int criteria[3][graph_size];
+    block_t (*edges_p)[][TOTAL_BLOCK_NUM(graph_size)] = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])edges;
 
+    int criteria[3][graph_size];
     for (int i = 0; i < graph_size; i++) {
         criteria[0][i] = i;
         criteria[1][i] = i;
@@ -60,11 +58,11 @@ void pop_complex_random (
     int degrees[graph_size];
     count_edges(graph_size, edges, degrees);
 
-    int* metrics[2] = {weights, degrees};
+    const int* metrics[2] = {weights, degrees};
 
-    qsort_r(criteria[0], graph_size, sizeof(int), comp_crit_1, metrics);
-    qsort_r(criteria[1], graph_size, sizeof(int), comp_crit_2, metrics);
-    qsort_r(criteria[2], graph_size, sizeof(int), comp_crit_3, weights);
+    qsort_r(criteria[0], graph_size, sizeof(int), comp_crit_1, (void*)metrics);
+    qsort_r(criteria[1], graph_size, sizeof(int), comp_crit_2, (void*)metrics);
+    qsort_r(criteria[2], graph_size, sizeof(int), comp_crit_3, (void*)weights);
 
     // Go through the queue and color each vertex.
     block_t adjacent_colors[TOTAL_BLOCK_NUM(graph_size)];
@@ -72,7 +70,7 @@ void pop_complex_random (
     int current_vert;
     int i, j, k;
     for (int indiv_id = 0; indiv_id < pop_size; indiv_id++) {
-        indiv = population[indiv_id];
+        indiv = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])population[indiv_id];
 
         memset(indiv, 0, max_color * TOTAL_BLOCK_NUM(graph_size) * sizeof(block_t));
 
@@ -89,7 +87,7 @@ void pop_complex_random (
             for(j = 0; j < TOTAL_BLOCK_NUM(graph_size); j++) {
                 for(k = 0; k < max_color; k++) {
                     // SET_COLOR(adjacent_colors, edges[current_vert][j] & (*indiv)[k][j] & 1);
-                    if (edges[current_vert][j] & (*indiv)[k][j]) {
+                    if ((*edges_p)[current_vert][j] & (*indiv)[k][j]) {
                         SET_COLOR(adjacent_colors, k);
                         break;
                     }
@@ -114,9 +112,10 @@ void pop_complex_random (
 bool read_graph (
     const char* filename, 
     int graph_size, 
-    block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
+    block_t *edges, 
     int offset_i
 ) {
+    block_t (*edges_p)[][TOTAL_BLOCK_NUM(graph_size)] = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])edges;
     FILE *fp = fopen(filename, "r");
     
     if(fp == NULL)
@@ -137,7 +136,7 @@ bool read_graph (
         token = strtok_r (NULL, " ", &saveptr);
         column = atoi(token) + offset_i;
 
-        SET_EDGE(row, column, edges);
+        SET_EDGE(row, column, (*edges_p));
     }
     
     fclose(fp);
@@ -168,10 +167,13 @@ bool read_weights(const char* filename, int graph_size, int weights[]) {
 
 bool is_valid(
     int graph_size, 
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
+    const block_t *edges, 
     int color_num, 
-    const block_t colors[][TOTAL_BLOCK_NUM(graph_size)]
+    const block_t *colors
 ) {
+    const block_t (*edges_p)[][TOTAL_BLOCK_NUM(graph_size)] = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])edges;
+    const block_t (*colors_p)[][TOTAL_BLOCK_NUM(graph_size)] = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])colors;
+
     // Iterate through vertices.
     int i, j, k, i_block;
     block_t i_mask;
@@ -184,7 +186,7 @@ bool is_valid(
 
         // Iterate through colors and look for the vertex.
         for(j = 0; j < color_num; j++){
-            if((colors[j][i_block] & i_mask)) {
+            if(((*colors_p)[j][i_block] & i_mask)) {
                 if(!vertex_is_colored) {
                     vertex_is_colored = true;
 
@@ -193,7 +195,7 @@ bool is_valid(
                 }
 
                 for(k = i + 1; k < graph_size; k++) { // Through every vertex after i in color j.
-                    if(CHECK_COLOR(colors[j], k) && (edges[k][i_block] & i_mask)) {
+                    if(CHECK_COLOR((*colors_p)[j], k) && ((*edges_p)[k][i_block] & i_mask)) {
                         // The two vertices have the same color.
                         printf("The vertices %d and %d are connected and have the same color %d.\n", i, k, j);
                         error_flag = true;
@@ -219,13 +221,14 @@ bool is_valid(
 }
 
 
-int count_edges(int graph_size, const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], int degrees[]) {
+int count_edges(int graph_size, const block_t *edges, int degrees[]) {
+    const block_t (*edges_p)[][TOTAL_BLOCK_NUM(graph_size)] = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])edges;
     memset(degrees, 0, graph_size*sizeof(int));
 
     int i, j, total = 0;
     for(i = 0; i < graph_size; i++) {
         for(j = 0; j < TOTAL_BLOCK_NUM(graph_size); j++)
-            degrees[i] += popcountl(edges[i][j]);
+            degrees[i] += popcountl((*edges_p)[i][j]);
         total += degrees[i];
     }
 
@@ -238,8 +241,10 @@ void print_colors(
     const char *header, 
     int color_num, 
     int graph_size, 
-    const block_t colors[][TOTAL_BLOCK_NUM(graph_size)]
+    const block_t *colors
 ) {
+    const block_t (*colors_p)[][TOTAL_BLOCK_NUM(graph_size)] = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])colors;
+
     FILE* fresults;
     fresults = fopen(filename, "w");
 
@@ -252,7 +257,7 @@ void print_colors(
 
     for(int i = 0; i < color_num; i++)
         for(int j = 0; j < graph_size; j++)
-            if(CHECK_COLOR(colors[i], j)) 
+            if(CHECK_COLOR((*colors_p)[i], j)) 
                 fprintf(fresults, "%d %d\n", i, j);
 
     fclose(fresults);
@@ -306,16 +311,18 @@ int graph_color_greedy(
 
 int count_conflicts(
     int graph_size, 
-    const block_t color[], 
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
-    int conflict_count[]
+    const block_t *color, 
+    const block_t *edges, 
+    int *conflict_count
 ) {
+    block_t (*edges_p)[][TOTAL_BLOCK_NUM(graph_size)] = (block_t (*)[][TOTAL_BLOCK_NUM(graph_size)])edges;
+
     int i, j, total_conflicts = 0;
     for(i = 0; i < graph_size; i++) {
         if(CHECK_COLOR(color, i)) {
             conflict_count[i] = 0;
             for(j = 0; j < TOTAL_BLOCK_NUM(graph_size); j++)
-                conflict_count[i] += popcountl(color[j] & edges[i][j]);
+                conflict_count[i] += popcountl(color[j] & (*edges_p)[i][j]);
             total_conflicts += conflict_count[i];
         }
     }
