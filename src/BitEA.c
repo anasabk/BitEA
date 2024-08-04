@@ -41,24 +41,17 @@ int BitEA(
         base_color_count
     );
 
-    // Create and initialize the list of used parents.
-    block_t used_parents[(TOTAL_BLOCK_NUM(population_size))];
-    memset(used_parents, 0, (TOTAL_BLOCK_NUM(population_size))*sizeof(block_t));
-
-    // Initialize generator parameters.
-    int best_i = 0;
-    int target_color = base_color_count;
 
     struct timeval t1, t2;
     *best_solution_time = 0;
     gettimeofday(&t1, NULL);
 
-    // Keep generating solutions for max_gen_num generations.
     block_t *child = malloc(base_color_count * TOTAL_BLOCK_NUM(graph_size) * sizeof(block_t));
+    int best_i = 0;
+    int target_color = base_color_count;
     int temp_uncolored;
     int parent1, parent2, child_colors, temp_fitness;
     int bad_parent;
-    // int best_iteration = 0;
     for(int i = 0; i < max_gen_num; i++) {
         if(target_color == 0)
             break;
@@ -67,13 +60,11 @@ int BitEA(
         memset(child, 0, (TOTAL_BLOCK_NUM(graph_size))*base_color_count*sizeof(block_t));
 
         // Pick 2 random parents
-        do { parent1 = rand()%population_size; } while (CHECK_COLOR(used_parents, parent1));
-        SET_COLOR(used_parents, parent1);
-        do { parent2 = rand()%population_size; } while (CHECK_COLOR(used_parents, parent2));
-        SET_COLOR(used_parents, parent2);
+        parent1 = rand()%population_size;
+        do { parent2 = rand()%population_size; } while (parent2 != parent1);
 
         // Do a crossover
-        temp_fitness = generate_child (
+        temp_fitness = crossover (
             graph_size, 
             edges, 
             weights,
@@ -87,13 +78,13 @@ int BitEA(
             &temp_uncolored
         );
 
-
+        // Choose the bad parent.
         if(fitness[parent1] <= fitness[parent2] && color_count[parent1] <= color_count[parent2])
             bad_parent = parent2;
         else
             bad_parent = parent1;
 
-        // Replace a dead parent.
+        // Replace the bad parent if needed.
         if(child_colors <= color_count[bad_parent] && temp_fitness <= fitness[bad_parent]) {
             memmove(population[bad_parent], child, (TOTAL_BLOCK_NUM(graph_size))*base_color_count*sizeof(block_t));
             color_count[bad_parent] = child_colors;
@@ -108,9 +99,6 @@ int BitEA(
                 *best_solution_time = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) / 1000000.0;   // us to ms
             }
         }
-
-        RESET_COLOR(used_parents, parent1);
-        RESET_COLOR(used_parents, parent2);
 
         // Make the target harder if it was found.
         if(temp_fitness == 0)
@@ -128,6 +116,32 @@ int BitEA(
         free(population[i]);
 
     return color_count[best_i];
+}
+
+int get_rand_color(int max_color_num, int colors_used, block_t used_color_list[]) {
+    // There are no available colors.
+    if(colors_used >= max_color_num) {
+        return -1;
+
+    // There are only 2 colors available, search for them linearly.
+    } else if(colors_used > max_color_num - 2) {
+        for(int i = 0; i < max_color_num; i++) {
+            if(!(used_color_list[BLOCK_INDEX(i)] & MASK(i))) {
+                used_color_list[BLOCK_INDEX(i)] |= MASK(i);
+                return i;
+            }
+        }
+    }
+
+    // Randomly try to select an available color.
+    int temp;
+    while(1) {
+        temp = rand()%max_color_num;
+        if(!(used_color_list[BLOCK_INDEX(temp)] & MASK(temp))) {
+            used_color_list[BLOCK_INDEX(temp)] |= MASK(temp);
+            return temp;
+        }
+    }
 }
 
 void fix_conflicts(
@@ -151,7 +165,7 @@ void fix_conflicts(
             if (CHECK_COLOR(color, i) &&
                 (conflict_count[worst_vert] < conflict_count[i] ||
                  (conflict_count[worst_vert] == conflict_count[i] && 
-                  (weights[worst_vert] > weights[i] || (weights[worst_vert] == weights[i] && rand()%2))))            ) {
+                  (weights[worst_vert] > weights[i] || (weights[worst_vert] == weights[i] && rand()%2))))) {
                 worst_vert = i;
             }
         }
@@ -174,7 +188,7 @@ void fix_conflicts(
     }
 }
 
-void crossover(
+void merge_and_fix(
     int graph_size,
     const block_t *edges, 
     const int *weights,
@@ -372,7 +386,7 @@ void local_search(
     }
 }
 
-int generate_child (
+int crossover (
     int graph_size, 
     const block_t *edges, 
     const int *weights,
@@ -419,7 +433,7 @@ int generate_child (
             chosen_parent_colors[0] = color1 == -1 ? NULL : (*parent1_p)[color1];
             chosen_parent_colors[1] = color2 == -1 ? NULL : (*parent2_p)[color2];
 
-            crossover(
+            merge_and_fix(
                 graph_size,
                 edges,
                 weights,

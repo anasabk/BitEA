@@ -34,19 +34,32 @@ int BitEA(
 
 
 /**
- * @brief Merge two parent colors and the pool into the child color. Vertices are
+ * @brief Get a random color not used previously in the used_color_list.
+ * When a color is returned, it is added to the used_color_list.
+ * 
+ * @param size Max number of colors.
+ * @param colors_used Number of colors used.
+ * @param used_color_list List of used colors.
+ * @return If an unused color is found, return it. If all colors are 
+ * used, return -1.
+ */
+int get_rand_color(int max_color_num, int colors_used, block_t *used_color_list);
+
+
+/**
+ * @brief Merge two parent colors with the pool into the child color. Vertices are
  * checked if used previously through used_vertex_list before being added
  * to the child color.
  * 
  * @param size Size of the graph.
  * @param parent_color Array of pointers to two parents.
- * @param child_color Pointer to the child color
- * @param pool Pool to be dumped into the child color.
+ * @param child_color Pointer to the child color.
+ * @param pool Pool.
  * @param pool_total Total number of vertices in the pool.
  * @param used_vertex_list List of used vertices.
  * @return Return the total number of newly used vertices.
  */
-void crossover(
+void merge_and_fix(
     int graph_size,
     const block_t *edges, 
     const int *weights,
@@ -59,6 +72,18 @@ void crossover(
 );
 
 
+/**
+ * @brief Remove conflicts from color until no conflicts remain in it.
+ * 
+ * @param graph_size Size of the graph.
+ * @param edges The edge matrix of the graph.
+ * @param weights The array of weights of vertices.
+ * @param conflict_count Array of number of conflicts for each vertex.
+ * @param total_conflicts Total number of conflicts.
+ * @param color Color to be modified.
+ * @param pool Pool.
+ * @param pool_total Number of vertices in the pool.
+ */
 void fix_conflicts(
     int graph_size,
     const block_t *edges, 
@@ -94,12 +119,12 @@ void local_search(
 
 
 /**
- * @brief Performs crossover between two parents to produce
+ * @brief Performs a crossover between two parents to produce
  * a new individual.
  * 
- * @param size Size of the graph.
+ * @param graph_size Size of the graph.
  * @param edges The edge matric of the graph.
- * @param num_of_edges List of the degrees of every vertex.
+ * @param weights The array of weights of vertices.
  * @param color_num1 Number of colors of the first parent.
  * @param color_num2 Number of colors of the second parent.
  * @param parent1 The first parent.
@@ -108,9 +133,10 @@ void local_search(
  * @param child Output pointer to the result individual.
  * @param child_color_count Output pointer to the number of colors of
  * the new individual.
+ * @param uncolored Output pointer to the number of uncolored vertices in the best solution.
  * @return Return the fitness of the new individual.
  */
-int generate_child (
+int crossover (
     int graph_size, 
     const block_t *edges, 
     const int *weights,
@@ -123,9 +149,6 @@ int generate_child (
     int *child_color_count,
     int *uncolored
 );
-
-
-void* generator(void *param);
 
 
 #endif
