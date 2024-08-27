@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <errno.h>
 
 #include "BitEA.h"
 #include "stdgraph.h"
@@ -42,7 +43,7 @@ void test_graph(void *param, int *best_result) {
 
     block_t *edges = malloc(sizeof(block_t) * (size_t)size * TOTAL_BLOCK_NUM((size_t)size));
     if(!read_graph(graph_filename, size, edges, 0)) {
-        printf("Could not initialize graph from %s, exiting ...\n", graph_filename);
+        printf("Could not initialize graph from %s, %s, exiting ...\n", graph_filename, strerror(errno));
         return;
     }
 
@@ -60,15 +61,9 @@ void test_graph(void *param, int *best_result) {
         memcpy(weights, edge_count, size*sizeof(int));
     }
 
-    
-    int max_edge_count = 0;
-    for(int i = 0; i < size; i++) 
-        if(max_edge_count < edge_count[i])
-            max_edge_count = edge_count[i];
-
     float temp_time;
     int temp_fitness, temp_color_count, temp_uncolored;
-    block_t *temp_colors = calloc(max_edge_count, TOTAL_BLOCK_NUM(size)*sizeof(block_t));
+    block_t *temp_colors = calloc(target_color, TOTAL_BLOCK_NUM(size)*sizeof(block_t));
 
     struct timeval t1, t2;
     float total_execution_time = 0;

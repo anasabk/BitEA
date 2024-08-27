@@ -26,7 +26,7 @@ int BitEA(
     int uncolored[population_size];
     int fitness[population_size];
     for (int i = 0; i < population_size; i++) {
-        population[i] = calloc(base_color_count * TOTAL_BLOCK_NUM((size_t)graph_size), sizeof(block_t));
+        population[i] = calloc(base_color_count, TOTAL_BLOCK_NUM(graph_size) * sizeof(block_t));
         uncolored[i] = base_color_count;
         color_count[i] = base_color_count;
         fitness[i] = __INT_MAX__;
@@ -40,7 +40,6 @@ int BitEA(
         population,
         base_color_count
     );
-
 
     struct timeval t1, t2;
     *best_solution_time = 0;
