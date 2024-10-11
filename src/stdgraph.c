@@ -8,20 +8,6 @@
 #include "stdgraph.h"
 
 
-void graph_color_random (
-    int graph_size, 
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)],  
-    block_t colors[][TOTAL_BLOCK_NUM(graph_size)], 
-    int max_color
-) {
-    int index;
-    for(int i = 0; i < graph_size; i++) {
-        index = rand()%max_color;
-        SET_COLOR(colors[index], i);
-    }
-}
-
-
 int comp_crit_1(const void* a, const void* b, void* metrics) {
     int* weights = ((int**)metrics)[0];
     int* degrees = ((int**)metrics)[1];

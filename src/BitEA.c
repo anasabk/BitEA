@@ -60,7 +60,7 @@ int BitEA(
 
         // Pick 2 random parents
         parent1 = rand()%population_size;
-        do { parent2 = rand()%population_size; } while (parent2 != parent1);
+        do { parent2 = rand()%population_size; } while (parent2 == parent1);
 
         // Do a crossover
         temp_fitness = crossover (

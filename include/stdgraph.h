@@ -7,7 +7,6 @@
 
 
 #define block_t uint64_t
-// #define EDGE_BIT_INDEX(small, large)        (((large) * (large - 1)/2) + small)
 #define BLOCK_INDEX(bit_index)              ((bit_index)/(sizeof(block_t)*8))
 #define MASK_INDEX(bit_index)               ((bit_index)%(sizeof(block_t)*8))
 #define MASK(bit_index)                     ((block_t)1 << MASK_INDEX(bit_index))
@@ -46,22 +45,6 @@ int graph_color_greedy(
     const block_t edges[][TOTAL_BLOCK_NUM(graph_size)], 
     block_t colors[][TOTAL_BLOCK_NUM(graph_size)], 
     int max_color_possible
-);
-
-/**
- * @brief randomly color the graph with max_color being the
- * upper bound of colors used.
- * 
- * @param size Size of the graph.
- * @param edges The edge matrix of the graph.
- * @param colors The result color matrix of the graph.
- * @param max_color The upper bound of colors to be used.
- */
-void graph_color_random(
-    int graph_size, 
-    const block_t edges[][TOTAL_BLOCK_NUM(graph_size)],  
-    block_t colors[][TOTAL_BLOCK_NUM(graph_size)], 
-    int max_color
 );
 
 void pop_complex_random (

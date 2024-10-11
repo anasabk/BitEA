@@ -8,7 +8,7 @@
 !instances/*/
 !instances/*/*
 !tests
-!tests/*
+!tests/DSJC125.1g.test.txt
 
 !makefile
 !README.md
