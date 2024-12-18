@@ -127,6 +127,8 @@ void test_graph(void *param, int *best_result) {
         print_colors(result_filename, buffer, target_color, size, temp_colors);
     }
 
+    fflush(((struct test_param*)param)->summary_file);
+
     free(edges);
     free(temp_colors);
 }
